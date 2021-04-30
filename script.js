@@ -3,13 +3,36 @@
 const img = new Image(); // used to load image from <input> and draw to canvas
 
 // Fires whenever the img object loads a new image (such as with img.src =)
-img.addEventListener('load', () => {
-  // TODO
+img.addEventListener("load", () => {
+  // get canvas context
+  const canvas = document.getElementById("user-image");
+  const ctx = canvas.getContext("2d");
+
+  // clear canvas context
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // toggle buttons
+  document.getElementById("button-group").disabled = false;
+
+  // fill canvas black
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // draw image
+  const imgDimm = 
+    getDimmensions(canvas.width, canvas.height, img.width, img.height);
+  ctx.drawImage(img, imgDimm.startX, imgDimm.startY, imgDimm.width, imgDimm.height);
 
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
   // - If you draw the image to canvas here, it will update as soon as a new image is selected
+});
+
+const image_input = document.getElementById("image-input");
+image_input.addEventListener("change", (event) => {
+  img.src = URL.createObjectURL(image_input.files[0]); // load selected image
+  img.alt = event.target.value.replace("C:\\fakepath\\", ""); // set alt text of image
 });
 
 /**
@@ -49,5 +72,5 @@ function getDimmensions(canvasWidth, canvasHeight, imageWidth, imageHeight) {
     startY = (canvasHeight - height) / 2;
   }
 
-  return { 'width': width, 'height': height, 'startX': startX, 'startY': startY }
+  return { width: width, height: height, startX: startX, startY: startY };
 }
