@@ -1,6 +1,12 @@
 // script.js
 
 const img = new Image(); // used to load image from <input> and draw to canvas
+let text_top;
+let text_bottom;
+
+const synth = window.speechSynthesis;
+const voices = synth.getVoices();
+let utterance;
 
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener("load", () => {
@@ -15,6 +21,7 @@ img.addEventListener("load", () => {
   document.querySelector("button[type='submit']").disabled = false;
   document.querySelector("button[type='reset']").disabled = true;
   document.querySelector("button[type='button']").disabled = true;
+  document.getElementById("voice-selection").disabled = true;
 
   // fill canvas black
   ctx.fillStyle = "black";
@@ -24,7 +31,7 @@ img.addEventListener("load", () => {
   const imgDimm = 
     getDimmensions(canvas.width, canvas.height, img.width, img.height);
   ctx.drawImage(img, imgDimm.startX, imgDimm.startY, imgDimm.width, imgDimm.height);
-k
+
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
   // - If you draw the image to canvas here, it will update as soon as a new image is selected
@@ -39,8 +46,8 @@ image_input.addEventListener("change", (event) => {
 const form_input = document.getElementById("generate-meme");
 form_input.addEventListener("submit", (event) => {
   // grab text from inputs
-  const text_top = document.getElementById("text-top").value;
-  const text_bottom = document.getElementById("text-bottom").value;
+  text_top = document.getElementById("text-top").value;
+  text_bottom = document.getElementById("text-bottom").value;
 
   // get canvas
   const canvas = document.getElementById("user-image");
@@ -66,6 +73,10 @@ form_input.addEventListener("submit", (event) => {
   document.querySelector("button[type='submit']").disabled = true;
   document.querySelector("button[type='reset']").disabled = false;
   document.querySelector("button[type='button']").disabled = false;
+  document.getElementById("voice-selection").disabled = false;
+
+  // create utterance
+  utterance = new SpeechSynthesisUtterance(`${text_top} ${text_bottom}`);
 
   // prevent refresh on form submit
   event.preventDefault();
@@ -80,11 +91,93 @@ clear_btn.addEventListener("click", () => {
   // clear canvas context
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // clear text fields
+  text_top = "";
+  text_bottom = "";
+
   // toggle buttons
   document.querySelector("button[type='submit']").disabled = false;
   document.querySelector("button[type='reset']").disabled = true;
   document.querySelector("button[type='button']").disabled = true;
+  document.getElementById("voice-selection").disabled = true;
 })
+
+// read text button event
+const read_text = document.querySelector("button[type='button']");
+read_text.addEventListener("click", () => {
+  // get slected voice
+  const voiceSelect = document.getElementById("voice-selection");
+  const selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
+ 
+  // find selected voice
+  for(var i = 0; i < voices.length ; i++) {
+    if(voices[i].name === selectedVoice) {
+      utterance.voice = voices[i];
+    }
+  }
+
+  // speak
+  synth.speak(utterance); 
+});
+
+// populate voices
+window.addEventListener("load", () => {
+  // get speech voices
+  const voiceSelect = document.getElementById("voice-selection");
+
+  // remove default option
+  if (voices.length) {
+    voiceSelect.remove(0);
+  }
+
+  // populate select element
+  for(var i = 0; i < voices.length ; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    // add options
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+    voiceSelect.add(option);
+  }
+
+  // toggle buttons
+  document.querySelector("button[type='submit']").disabled = false;
+  document.querySelector("button[type='reset']").disabled = true;
+  document.querySelector("button[type='button']").disabled = true;
+  document.getElementById("voice-selection").disabled = true;
+});
+
+document.getElementById("volume-group").addEventListener("input", () => {
+  // get volume from slider
+  const range = document.querySelector("input[type='range']");
+  const volume = range.value;
+
+  // set utterance volume
+  if (utterance) {
+    utterance.volume = volume / 100;
+  }
+
+  // set volume icon
+  const icon = document.querySelector("#volume-group img");
+  if (volume > 67) {
+    icon.src = "icons/volume-level-3.svg";
+    icon.alt = "Volume Level 3"
+  } else if (volume > 34) {
+    icon.src = "icons/volume-level-2.svg";
+    icon.alt = "Volume Level 2"
+  } else if (volume > 1) {
+    icon.src = "icons/volume-level-1.svg";
+    icon.alt = "Volume Level 1"
+  } else {
+    icon.src = "icons/volume-level-0.svg";
+    icon.alt = "Volume Level 0"
+  }
+});
 
 /**
  * Takes in the dimensions of the canvas and the new image, then calculates the new
